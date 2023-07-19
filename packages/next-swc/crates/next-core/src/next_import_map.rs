@@ -89,25 +89,45 @@ pub async fn get_next_client_import_map(
             );
         }
         ClientContextType::App { app_dir } => {
+            let react_flavor = if *next_config.enable_server_actions().await? {
+                "-experimental"
+            } else {
+                ""
+            };
             import_map.insert_exact_alias(
                 "react",
-                request_to_import_mapping(app_dir, "next/dist/compiled/react"),
+                request_to_import_mapping(
+                    app_dir,
+                    &format!("next/dist/compiled/react{react_flavor}"),
+                ),
             );
             import_map.insert_wildcard_alias(
                 "react/",
-                request_to_import_mapping(app_dir, "next/dist/compiled/react/*"),
+                request_to_import_mapping(
+                    app_dir,
+                    &format!("next/dist/compiled/react{react_flavor}/*"),
+                ),
             );
             import_map.insert_exact_alias(
                 "react-dom",
-                request_to_import_mapping(app_dir, "next/dist/compiled/react-dom"),
+                request_to_import_mapping(
+                    app_dir,
+                    &format!("next/dist/compiled/react-dom{react_flavor}"),
+                ),
             );
             import_map.insert_wildcard_alias(
                 "react-dom/",
-                request_to_import_mapping(app_dir, "next/dist/compiled/react-dom/*"),
+                request_to_import_mapping(
+                    app_dir,
+                    &format!("next/dist/compiled/react-dom{react_flavor}/*"),
+                ),
             );
             import_map.insert_wildcard_alias(
                 "react-server-dom-webpack/",
-                request_to_import_mapping(app_dir, "next/dist/compiled/react-server-dom-webpack/*"),
+                request_to_import_mapping(
+                    app_dir,
+                    &format!("next/dist/compiled/react-server-dom-webpack{react_flavor}/*"),
+                ),
             );
             import_map.insert_exact_alias(
                 "next/dynamic",
@@ -221,6 +241,7 @@ pub async fn get_next_server_import_map(
         ty,
         mode,
         NextRuntime::NodeJs,
+        next_config,
     )
     .await?;
     let external: Vc<ImportMapping> = ImportMapping::External(None).cell();
@@ -252,6 +273,13 @@ pub async fn get_next_server_import_map(
                 }
                 NextMode::Development => {}
             }
+            import_map.insert_exact_alias(
+                "private-next-rsc-action-proxy",
+                request_to_import_mapping(
+                    project_path,
+                    "next/dist/build/webpack/loaders/next-flight-loader/action-proxy",
+                ),
+            );
             import_map.insert_exact_alias(
                 "next/head",
                 request_to_import_mapping(project_path, "next/dist/client/components/noop-head"),
@@ -297,8 +325,15 @@ pub async fn get_next_edge_import_map(
 
     let ty = ty.into_value();
 
-    insert_next_server_special_aliases(&mut import_map, project_path, ty, mode, NextRuntime::Edge)
-        .await?;
+    insert_next_server_special_aliases(
+        &mut import_map,
+        project_path,
+        ty,
+        mode,
+        NextRuntime::Edge,
+        next_config,
+    )
+    .await?;
 
     match ty {
         ServerContextType::Pages { .. } | ServerContextType::PagesData { .. } => {}
@@ -383,6 +418,7 @@ async fn insert_next_server_special_aliases(
     ty: ServerContextType,
     mode: NextMode,
     runtime: NextRuntime,
+    next_config: Vc<NextConfig>,
 ) -> Result<()> {
     let external_if_node = move |context_dir: Vc<FileSystemPath>, request: &str| match runtime {
         NextRuntime::Edge => request_to_import_mapping(context_dir, request),
@@ -437,25 +473,6 @@ async fn insert_next_server_special_aliases(
                 request_to_import_mapping(app_dir, "next/dist/compiled/@opentelemetry/api"),
             );
             import_map.insert_exact_alias(
-                "react",
-                passthrough_external_if_node(app_dir, "next/dist/compiled/react"),
-            );
-            import_map.insert_wildcard_alias(
-                "react/",
-                passthrough_external_if_node(app_dir, "next/dist/compiled/react/*"),
-            );
-            import_map.insert_exact_alias(
-                "react-dom",
-                passthrough_external_if_node(
-                    app_dir,
-                    "next/dist/compiled/react-dom/server-rendering-stub.js",
-                ),
-            );
-            import_map.insert_wildcard_alias(
-                "react-dom/",
-                passthrough_external_if_node(app_dir, "next/dist/compiled/react-dom/*"),
-            );
-            import_map.insert_exact_alias(
                 "styled-jsx",
                 passthrough_external_if_node(app_dir, "next/dist/compiled/styled-jsx"),
             );
@@ -463,11 +480,45 @@ async fn insert_next_server_special_aliases(
                 "styled-jsx/",
                 passthrough_external_if_node(app_dir, "next/dist/compiled/styled-jsx/*"),
             );
+
+            let react_flavor = if *next_config.enable_server_actions().await? {
+                "-experimental"
+            } else {
+                ""
+            };
+            import_map.insert_exact_alias(
+                "react",
+                passthrough_external_if_node(
+                    app_dir,
+                    &format!("next/dist/compiled/react{react_flavor}"),
+                ),
+            );
+            import_map.insert_wildcard_alias(
+                "react/",
+                passthrough_external_if_node(
+                    app_dir,
+                    &format!("next/dist/compiled/react{react_flavor}/*"),
+                ),
+            );
+            import_map.insert_exact_alias(
+                "react-dom",
+                passthrough_external_if_node(
+                    app_dir,
+                    &format!("next/dist/compiled/react-dom{react_flavor}/server-rendering-stub.js"),
+                ),
+            );
+            import_map.insert_wildcard_alias(
+                "react-dom/",
+                passthrough_external_if_node(
+                    app_dir,
+                    &format!("next/dist/compiled/react-dom{react_flavor}/*"),
+                ),
+            );
             import_map.insert_wildcard_alias(
                 "react-server-dom-webpack/",
                 passthrough_external_if_node(
                     app_dir,
-                    "next/dist/compiled/react-server-dom-webpack/*",
+                    &format!("next/dist/compiled/react-server-dom-webpack{react_flavor}/*"),
                 ),
             );
         }
@@ -492,33 +543,47 @@ async fn insert_next_server_special_aliases(
                 // @opentelemetry/api
                 request_to_import_mapping(app_dir, "next/dist/compiled/@opentelemetry/api"),
             );
+            let react_flavor = if *next_config.enable_server_actions().await? {
+                "-experimental"
+            } else {
+                ""
+            };
             if matches!(ty, ServerContextType::AppRSC { .. }) {
                 import_map.insert_exact_alias(
                     "react",
                     request_to_import_mapping(
                         app_dir,
-                        "next/dist/compiled/react/react.shared-subset",
+                        &format!("next/dist/compiled/react{react_flavor}/react.shared-subset"),
                     ),
                 );
             } else {
                 import_map.insert_exact_alias(
                     "react",
-                    request_to_import_mapping(app_dir, "next/dist/compiled/react"),
+                    request_to_import_mapping(
+                        app_dir,
+                        &format!("next/dist/compiled/react{react_flavor}"),
+                    ),
                 );
             }
             import_map.insert_exact_alias(
                 "react-dom",
                 request_to_import_mapping(
                     app_dir,
-                    "next/dist/compiled/react-dom/server-rendering-stub",
+                    &format!("next/dist/compiled/react-dom{react_flavor}/server-rendering-stub"),
                 ),
             );
             for (wildcard_alias, request) in [
-                ("react/", "next/dist/compiled/react/*"),
-                ("react-dom/", "next/dist/compiled/react-dom/*"),
+                (
+                    "react/",
+                    &format!("next/dist/compiled/react{react_flavor}/*"),
+                ),
+                (
+                    "react-dom/",
+                    &format!("next/dist/compiled/react-dom{react_flavor}/*"),
+                ),
                 (
                     "react-server-dom-webpack/",
-                    "next/dist/compiled/react-server-dom-webpack/*",
+                    &format!("next/dist/compiled/react-server-dom-webpack{react_flavor}/*"),
                 ),
             ] {
                 import_map.insert_wildcard_alias(
@@ -535,24 +600,35 @@ async fn insert_next_server_special_aliases(
         // * passes through react and (react|react-dom|react-server-dom-webpack)/(.*) to
         //   next/dist/compiled/react and next/dist/compiled/$1/$2 resp.
         (NextMode::Build | NextMode::Development, ServerContextType::AppSSR { app_dir }) => {
+            let react_flavor = if *next_config.enable_server_actions().await? {
+                "-experimental"
+            } else {
+                ""
+            };
             import_map.insert_exact_alias(
                 "react",
-                external_if_node(app_dir, "next/dist/compiled/react"),
+                external_if_node(app_dir, &format!("next/dist/compiled/react{react_flavor}")),
             );
             import_map.insert_exact_alias(
                 "react-dom",
                 external_if_node(
                     app_dir,
-                    "next/dist/compiled/react-dom/server-rendering-stub",
+                    &format!("next/dist/compiled/react-dom{react_flavor}/server-rendering-stub"),
                 ),
             );
 
             for (wildcard_alias, request) in [
-                ("react/", "next/dist/compiled/react/*"),
-                ("react-dom/", "next/dist/compiled/react-dom/*"),
+                (
+                    "react/",
+                    &format!("next/dist/compiled/react{react_flavor}/*"),
+                ),
+                (
+                    "react-dom/",
+                    &format!("next/dist/compiled/react-dom{react_flavor}/*"),
+                ),
                 (
                     "react-server-dom-webpack/",
-                    "next/dist/compiled/react-server-dom-webpack/*",
+                    &format!("next/dist/compiled/react-server-dom-webpack{react_flavor}/*"),
                 ),
             ] {
                 let import_mapping = external_if_node(app_dir, request);

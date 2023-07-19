@@ -13,10 +13,14 @@ const originModules = [
   require.resolve('../../../server/load-components'),
   require.resolve('../../../server/next-server'),
   require.resolve('../../../server/app-render/use-flight-response'),
+  require.resolve(
+    '../../../server/future/route-matcher-providers/helpers/manifest-loaders/node-manifest-loader.js'
+  ),
   require.resolve('../../../compiled/react-server-dom-webpack/client.edge'),
   require.resolve(
     '../../../compiled/react-server-dom-webpack-experimental/client.edge'
   ),
+  require.resolve('../../../server/app-render/use-flight-response.js'),
 ]
 
 const RUNTIME_NAMES = ['webpack-runtime', 'webpack-api-runtime']
