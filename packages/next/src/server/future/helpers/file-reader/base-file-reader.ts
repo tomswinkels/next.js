@@ -6,7 +6,7 @@ import { recursiveReadDir } from '../../../../lib/recursive-readdir'
  * Reads all the files in the directory and its subdirectories following any
  * symbolic links and returns a sorted list of the files.
  */
-export class BaseRecursiveFileReader implements FileReader {
+export class BaseFileReader implements FileReader {
   public async read(
     dir: string,
     { recursive }: FileReaderOptions
@@ -23,6 +23,10 @@ export class BaseRecursiveFileReader implements FileReader {
 
       // Only go to a depth of 1 if we're not recursive.
       maxDepth: recursive ? Infinity : 1,
+
+      // We don't want to throw if the directory doesn't exist, we'll handle
+      // that ourselves.
+      throwOnMissing: false,
     })
   }
 }
