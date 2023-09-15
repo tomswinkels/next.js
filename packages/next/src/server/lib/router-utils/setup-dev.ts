@@ -170,8 +170,6 @@ async function startWatcher(opts: SetupOpts) {
   }
 
   const serverFields: {
-    actualMiddlewareFile?: string | undefined
-    actualInstrumentationHookFile?: string | undefined
     middleware?:
       | {
           page: string
@@ -586,7 +584,6 @@ async function startWatcher(opts: SetupOpts) {
             )
             processIssues('middleware', writtenEndpoint)
             await loadMiddlewareManifest('middleware', 'middleware')
-            serverFields.actualMiddlewareFile = 'middleware'
             serverFields.middleware = {
               match: null as any,
               page: '/',
@@ -600,14 +597,9 @@ async function startWatcher(opts: SetupOpts) {
             prevMiddleware = true
           } else {
             middlewareManifests.delete('middleware')
-            serverFields.actualMiddlewareFile = undefined
             serverFields.middleware = undefined
             prevMiddleware = false
           }
-          await propagateToWorkers(
-            'actualMiddlewareFile',
-            serverFields.actualMiddlewareFile
-          )
           await propagateToWorkers('middleware', serverFields.middleware)
 
           currentEntriesHandlingResolve!()
@@ -1505,11 +1497,6 @@ async function startWatcher(opts: SetupOpts) {
             )
             continue
           }
-          serverFields.actualMiddlewareFile = rootFile
-          await propagateToWorkers(
-            'actualMiddlewareFile',
-            serverFields.actualMiddlewareFile
-          )
           middlewareMatchers = staticInfo.middleware?.matchers || [
             { regexp: '.*', originalSource: '/:path*' },
           ]
@@ -1520,11 +1507,6 @@ async function startWatcher(opts: SetupOpts) {
           nextConfig.experimental.instrumentationHook
         ) {
           NextBuildContext.hasInstrumentationHook = true
-          serverFields.actualInstrumentationHookFile = rootFile
-          await propagateToWorkers(
-            'actualInstrumentationHookFile',
-            serverFields.actualInstrumentationHookFile
-          )
           continue
         }
 
