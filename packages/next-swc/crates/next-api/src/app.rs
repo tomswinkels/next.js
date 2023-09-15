@@ -684,6 +684,7 @@ impl AppEndpoint {
                 let (loader, manifest) = create_server_actions_manifest(
                     app_entry.rsc_entry,
                     node_root,
+                    &app_entry.pathname,
                     &app_entry.original_name,
                     NextRuntime::NodeJs,
                     Vc::upcast(this.app_project.edge_rsc_module_context()),
@@ -803,6 +804,7 @@ impl AppEndpoint {
                 let (loader, manifest) = create_server_actions_manifest(
                     app_entry.rsc_entry,
                     node_root,
+                    &app_entry.pathname,
                     &app_entry.original_name,
                     NextRuntime::NodeJs,
                     Vc::upcast(this.app_project.rsc_module_context()),

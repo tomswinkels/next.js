@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use indoc::writedoc;
 use next_core::{
     next_manifests::{ActionLayer, ActionManifestWorkerEntry, ServerReferenceManifest},
-    util::NextRuntime,
+    util::{get_asset_prefix_from_pathname, NextRuntime},
 };
 use next_swc::server_actions::parse_server_actions;
 use turbo_tasks::{
@@ -39,7 +39,8 @@ use turbopack_binding::{
 pub(crate) async fn create_server_actions_manifest(
     entry: Vc<Box<dyn EcmascriptChunkPlaceable>>,
     node_root: Vc<FileSystemPath>,
-    app_page_name: &str,
+    pathname: &str,
+    page_name: &str,
     runtime: NextRuntime,
     asset_context: Vc<Box<dyn AssetContext>>,
     chunking_context: Vc<Box<dyn EcmascriptChunkingContext>>,
@@ -54,7 +55,8 @@ pub(crate) async fn create_server_actions_manifest(
     if !*enable_server_actions.await? {
         let manifest = build_manifest(
             node_root,
-            app_page_name,
+            pathname,
+            page_name,
             runtime,
             ModuleActionMap::empty(),
             Default::default(),
@@ -64,15 +66,15 @@ pub(crate) async fn create_server_actions_manifest(
     }
 
     let actions = get_actions(Vc::upcast(entry));
-    let loader =
-        build_server_actions_loader(node_root, app_page_name, actions, asset_context).await?;
+    let loader = build_server_actions_loader(node_root, page_name, actions, asset_context).await?;
     let Some(evaluable) = Vc::try_resolve_sidecast::<Box<dyn EvaluatableAsset>>(loader).await?
     else {
         bail!("loader module must be evaluatable");
     };
 
     let loader_id = loader.as_chunk_item(chunking_context).id().to_string();
-    let manifest = build_manifest(node_root, app_page_name, runtime, actions, loader_id).await?;
+    let manifest =
+        build_manifest(node_root, pathname, page_name, runtime, actions, loader_id).await?;
     Ok((Some(evaluable), manifest))
 }
 
@@ -84,7 +86,7 @@ pub(crate) async fn create_server_actions_manifest(
 /// client and present inside the paired manifest.
 async fn build_server_actions_loader(
     node_root: Vc<FileSystemPath>,
-    app_page_name: &str,
+    page_name: &str,
     actions: Vc<ModuleActionMap>,
     asset_context: Vc<Box<dyn AssetContext>>,
 ) -> Result<Vc<Box<dyn EcmascriptChunkPlaceable>>> {
@@ -111,7 +113,7 @@ async fn build_server_actions_loader(
     }
     write!(contents, "}});")?;
 
-    let output_path = node_root.join(format!("server/app{app_page_name}/actions.js"));
+    let output_path = node_root.join(format!("server/app{page_name}/actions.js"));
     let file = File::from(contents.build());
     let source = VirtualSource::new(output_path, AssetContent::file(file.into()));
     let module = asset_context.process(
@@ -132,13 +134,15 @@ async fn build_server_actions_loader(
 /// module id which exports a function using that hashed name.
 async fn build_manifest(
     node_root: Vc<FileSystemPath>,
-    app_page_name: &str,
+    pathname: &str,
+    page_name: &str,
     runtime: NextRuntime,
     actions: Vc<ModuleActionMap>,
     loader_id: Vc<String>,
 ) -> Result<Vc<Box<dyn OutputAsset>>> {
+    let manifest_path_prefix = get_asset_prefix_from_pathname(pathname);
     let manifest_path = node_root.join(format!(
-        "server/app{app_page_name}/page/server-reference-manifest.json",
+        "server/app{manifest_path_prefix}/page/server-reference-manifest.json",
     ));
     let mut manifest = ServerReferenceManifest {
         ..Default::default()
@@ -156,12 +160,12 @@ async fn build_manifest(
         for hash in value.keys() {
             let entry = mapping.entry(hash.clone()).or_default();
             entry.workers.insert(
-                format!("app{app_page_name}"),
+                format!("app{page_name}"),
                 ActionManifestWorkerEntry::String(loader_id_value.clone_value()),
             );
             entry
                 .layer
-                .insert(format!("app{app_page_name}"), ActionLayer::Rsc);
+                .insert(format!("app{page_name}"), ActionLayer::Rsc);
         }
     }
 
