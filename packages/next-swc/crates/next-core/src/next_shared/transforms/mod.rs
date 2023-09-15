@@ -23,17 +23,26 @@ use crate::next_image::{module::BlurPlaceholderMode, StructuredImageModuleType};
 
 /// Returns a rule which applies the Next.js dynamic transform.
 pub fn get_next_image_rule() -> ModuleRule {
+    #[allow(unused)]
+    let mut resources = vec![
+        ModuleRuleCondition::ResourcePathEndsWith(".jpg".to_string()),
+        ModuleRuleCondition::ResourcePathEndsWith(".jpeg".to_string()),
+        ModuleRuleCondition::ResourcePathEndsWith(".png".to_string()),
+        ModuleRuleCondition::ResourcePathEndsWith(".apng".to_string()),
+        ModuleRuleCondition::ResourcePathEndsWith(".gif".to_string()),
+        ModuleRuleCondition::ResourcePathEndsWith(".svg".to_string()),
+        ModuleRuleCondition::ResourcePathEndsWith(".bmp".to_string()),
+        ModuleRuleCondition::ResourcePathEndsWith(".ico".to_string()),
+    ];
+
+    #[cfg(feature = "image-webp")]
+    resources.push(ModuleRuleCondition::ResourcePathEndsWith(".webp".to_string()));
+
+    #[cfg(feature = "image-avif")]
+    resources.push(ModuleRuleCondition::ResourcePathEndsWith(".avif".to_string()));
+
     ModuleRule::new(
-        ModuleRuleCondition::any(vec![
-            ModuleRuleCondition::ResourcePathEndsWith(".jpg".to_string()),
-            ModuleRuleCondition::ResourcePathEndsWith(".jpeg".to_string()),
-            ModuleRuleCondition::ResourcePathEndsWith(".png".to_string()),
-            ModuleRuleCondition::ResourcePathEndsWith(".webp".to_string()),
-            ModuleRuleCondition::ResourcePathEndsWith(".avif".to_string()),
-            ModuleRuleCondition::ResourcePathEndsWith(".apng".to_string()),
-            ModuleRuleCondition::ResourcePathEndsWith(".gif".to_string()),
-            ModuleRuleCondition::ResourcePathEndsWith(".svg".to_string()),
-        ]),
+        ModuleRuleCondition::any(resources),
         vec![ModuleRuleEffect::ModuleType(ModuleType::Custom(
             Vc::upcast(StructuredImageModuleType::new(Value::new(
                 BlurPlaceholderMode::DataUrl,
