@@ -36,10 +36,14 @@ pub fn get_next_image_rule() -> ModuleRule {
     ];
 
     #[cfg(feature = "image-webp")]
-    resources.push(ModuleRuleCondition::ResourcePathEndsWith(".webp".to_string()));
+    resources.push(ModuleRuleCondition::ResourcePathEndsWith(
+        ".webp".to_string(),
+    ));
 
     #[cfg(feature = "image-avif")]
-    resources.push(ModuleRuleCondition::ResourcePathEndsWith(".avif".to_string()));
+    resources.push(ModuleRuleCondition::ResourcePathEndsWith(
+        ".avif".to_string(),
+    ));
 
     ModuleRule::new(
         ModuleRuleCondition::any(resources),
