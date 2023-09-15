@@ -854,11 +854,7 @@ async function startWatcher(opts: SetupOpts) {
       const json = JSON.stringify(actionManifest, null, 2)
       deleteCache(actionManifestJsonPath)
       deleteCache(actionManifestJsPath)
-      await writeFile(
-        actionManifestJsonPath,
-        JSON.stringify(actionManifest, null, 2),
-        'utf-8'
-      )
+      await writeFile(actionManifestJsonPath, json, 'utf-8')
       await writeFile(
         actionManifestJsPath,
         `self.__RSC_SERVER_MANIFEST=${JSON.stringify(json)}`,

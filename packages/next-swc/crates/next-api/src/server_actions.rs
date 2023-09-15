@@ -4,7 +4,7 @@ use anyhow::{bail, Result};
 use indexmap::IndexMap;
 use indoc::writedoc;
 use next_core::{
-    next_manifests::{ActionManifestWorkerEntry, ActionLayer, ServerReferenceManifest},
+    next_manifests::{ActionLayer, ActionManifestWorkerEntry, ServerReferenceManifest},
     util::NextRuntime,
 };
 use next_swc::server_actions::parse_server_actions;
@@ -57,7 +57,7 @@ pub(crate) async fn create_server_actions_manifest(
             app_page_name,
             runtime,
             ModuleActionMap::empty(),
-            Vc::<String>::empty(),
+            Default::default(),
         )
         .await?;
         return Ok((None, manifest));
@@ -138,7 +138,7 @@ async fn build_manifest(
     loader_id: Vc<String>,
 ) -> Result<Vc<Box<dyn OutputAsset>>> {
     let manifest_path = node_root.join(format!(
-        "server/app{app_page_name}/server-reference-manifest.json",
+        "server/app{app_page_name}/page/server-reference-manifest.json",
     ));
     let mut manifest = ServerReferenceManifest {
         ..Default::default()
