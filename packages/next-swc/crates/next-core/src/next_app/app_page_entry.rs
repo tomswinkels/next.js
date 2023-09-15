@@ -75,7 +75,6 @@ pub async fn get_app_page_entry(
     // Load the file from the next.js codebase.
     let file = load_next_js_template(project_root, template_file.to_string()).await?;
 
-    dbg!((&original_name, &original_page_name, &pathname));
     let mut file = file
         .to_str()?
         .replace(

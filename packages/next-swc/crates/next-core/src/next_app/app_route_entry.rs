@@ -65,7 +65,7 @@ pub async fn get_app_route_entry(
         .to_str()?
         .replace(
             "\"VAR_DEFINITION_PAGE\"",
-            &StringifyJs(&original_page_name).to_string(),
+            &StringifyJs(&original_name).to_string(),
         )
         .replace(
             "\"VAR_DEFINITION_PATHNAME\"",
